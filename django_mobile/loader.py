@@ -14,12 +14,12 @@ class Loader(BaseLoader):
     def get_contents(self, origin):
         return origin.loader.get_contents(origin)
 
-    def get_template_sources(self, template_name, template_dirs=None):
+    def get_template_sources(self, template_name):
         template_name = self.prepare_template_name(template_name)
         for loader in self.template_source_loaders:
             if hasattr(loader, 'get_template_sources'):
                 try:
-                    for result in loader.get_template_sources(template_name, template_dirs):
+                    for result in loader.get_template_sources(template_name):
                         yield result
                 except UnicodeDecodeError:
                     # The template dir name was a bytestring that wasn't valid UTF-8.
@@ -36,27 +36,6 @@ class Loader(BaseLoader):
             template_name = settings.FLAVOURS_TEMPLATE_PREFIX + template_name
         return template_name
 
-    def load_template(self, template_name, template_dirs=None):
-        template_name = self.prepare_template_name(template_name)
-        for loader in self.template_source_loaders:
-            try:
-                return loader(template_name, template_dirs)
-            except TemplateDoesNotExist:
-                pass
-        raise TemplateDoesNotExist("Tried %s" % template_name)
-
-    def load_template_source(self, template_name, template_dirs=None):
-        template_name = self.prepare_template_name(template_name)
-        for loader in self.template_source_loaders:
-            if hasattr(loader, 'load_template_source'):
-                try:
-                    return loader.load_template_source(
-                        template_name,
-                        template_dirs)
-                except TemplateDoesNotExist:
-                    pass
-        raise TemplateDoesNotExist("Tried %s" % template_name)
-
     @property
     def template_source_loaders(self):
         if not self._template_source_loaders:
@@ -72,22 +51,12 @@ class Loader(BaseLoader):
 class CachedLoader(DjangoCachedLoader):
     is_usable = True
 
-    def cache_key(self, template_name, template_dirs, *args):
-        if len(args) > 0:  # Django >= 1.9
-            key = super(CachedLoader, self).cache_key(template_name, template_dirs, *args)
-        else:
-            if template_dirs:
-                key = '-'.join([
-                    template_name,
-                    hashlib.sha1(force_bytes('|'.join(template_dirs))).hexdigest()
-                ])
-            else:
-                key = template_name
-
+    def cache_key(self, template_name, *args):
+        key = super(CachedLoader, self).cache_key(template_name, *args)
         return '{0}:{1}'.format(get_flavour(), key)
 
-    def load_template(self, template_name, template_dirs=None):
-        key = self.cache_key(template_name, template_dirs)
+    def get_template(self, template_name):
+        key = self.cache_key(template_name)
         template_tuple = self.template_cache.get(key)
 
         if template_tuple is TemplateDoesNotExist:
