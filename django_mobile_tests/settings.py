@@ -50,10 +50,11 @@ TEMPLATES = [
         ],
         'OPTIONS': {
             'context_processors': [
-                 "django.contrib.auth.context_processors.auth",
-                "django.core.context_processors.debug",
-                "django.core.context_processors.i18n",
-                "django.core.context_processors.media",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "django.template.context_processors.debug",
+                "django.template.context_processors.i18n",
+                "django.template.context_processors.media",
                 "django_mobile.context_processors.flavour",
                 "django_mobile.context_processors.is_mobile",
             ],
@@ -74,6 +75,7 @@ MIDDLEWARE = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django_mobile.middleware.MobileDetectionMiddleware',
     'django_mobile.middleware.SetFlavourMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
 )
 
 INSTALLED_APPS = (
@@ -81,6 +83,7 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
+    'django.contrib.messages',
     'django.contrib.admin',
 
     'django_mobile',

@@ -3,7 +3,7 @@ from django.template import TemplateDoesNotExist
 from django.template.loaders.cached import Loader as DjangoCachedLoader
 from django_mobile import get_flavour
 from django_mobile.conf import settings
-from django_mobile.compat import BaseLoader, template_loader, template_from_string
+from django_mobile.utils import BaseLoader, template_loader, template_from_string
 from django.utils.encoding import force_bytes
 
 
@@ -31,7 +31,7 @@ class Loader(BaseLoader):
                     pass
 
     def prepare_template_name(self, template_name):
-        template_name = u'%s/%s' % (get_flavour(), template_name)
+        template_name = '%s/%s' % (get_flavour(), template_name)
         if settings.FLAVOURS_TEMPLATE_PREFIX:
             template_name = settings.FLAVOURS_TEMPLATE_PREFIX + template_name
         return template_name
@@ -55,14 +55,14 @@ class CachedLoader(DjangoCachedLoader):
         key = super(CachedLoader, self).cache_key(template_name, *args)
         return '{0}:{1}'.format(get_flavour(), key)
 
-    def get_template(self, template_name):
-        key = self.cache_key(template_name)
-        template_tuple = self.template_cache.get(key)
+    def get_template(self, template_name, skip=None):
+        key = self.cache_key(template_name, skip)
+        cached_template = self.template_cache.get(key)
 
-        if template_tuple is TemplateDoesNotExist:
+        if cached_template is TemplateDoesNotExist:
             raise TemplateDoesNotExist('Template not found: %s' % template_name)
-        elif template_tuple is None:
-            template, origin = self.find_template(template_name, template_dirs)
+        elif cached_template is None:
+            template = super(DjangoCachedLoader, self).get_template(template_name, skip)
             if not hasattr(template, 'render'):
                 try:
                     template = template_from_string(template)
@@ -71,8 +71,8 @@ class CachedLoader(DjangoCachedLoader):
                     # back off to returning the source and display name for the template
                     # we were asked to load. This allows for correct identification (later)
                     # of the actual template that does not exist.
-                    self.template_cache[key] = (template, origin)
+                    self.template_cache[key] = template
 
-            self.template_cache[key] = (template, None)
+            self.template_cache[key] = template
 
         return self.template_cache[key]
